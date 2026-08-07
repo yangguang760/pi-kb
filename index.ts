@@ -459,7 +459,7 @@ export default async function (pi: ExtensionAPI) {
     name: "kb_create_reflection", label: "KB Create Reflection",
     description: "创建 reflection。",
     promptSnippet: "Create a reflection",
-    promptGuidelines: ["总结近期 observations 的模式和趋势。聚焦于实质性归纳。"],
+    promptGuidelines: ["总结近期 observations 的模式和趋势。聚焦于实质性归纳。sources 必须填写被总结的所有 observation ID。"],
     parameters: Type.Object({
       period: Type.String(), content: Type.String(),
       sources: Type.Array(Type.String()),
