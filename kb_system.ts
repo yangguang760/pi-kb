@@ -118,6 +118,22 @@ async function initializeInternal(sys: {
   const staleAgg = nodeIndex.aggregateStale();
   const staleNodeCount = staleAgg.reduce((sum, a) => sum + a.count, 0);
 
+  // Recalculate unreflected count from actual node/link state (fix stale counter)
+  let actualUnreflected = 0;
+  for (const skel of nodeIndex.getAllSkeletons()) {
+    if (skel.type !== "observation") continue;
+    if (skel.status === "dead" || skel.status === "archived") continue;
+    const hasReflection = nodeIndex.graph
+      .getIncoming(skel.id)
+      .some((l) => l.type === "supported_by" && l.status === "active");
+    if (!hasReflection) actualUnreflected++;
+  }
+  const meta = await storage.readMeta();
+  if (meta.reflection_triggers.unreflected_observations !== actualUnreflected) {
+    meta.reflection_triggers.unreflected_observations = actualUnreflected;
+    await storage.writeMeta(meta);
+  }
+
   return {
     nodesLoaded: loaded,
     parseErrors: errors,

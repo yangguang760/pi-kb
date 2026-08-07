@@ -207,6 +207,10 @@ export interface NodeSkeleton {
   tags: string[];
   /** First line of content for quick display */
   snippet: string;
+  /** Source node IDs (for reflections/insights) */
+  sources?: string[];
+  /** Child node IDs (for MOCs) */
+  child_nodes?: string[];
 }
 
 // ─── Domain Half-life Configuration ───────────────────────────

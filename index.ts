@@ -168,7 +168,22 @@ export default async function (pi: ExtensionAPI) {
       ctx.ui.notify(`KB: ${nodeIndex.size} nodes — large`, "warning");
 
     const meta = await storage.readMeta();
-    const unreflected = meta.reflection_triggers.unreflected_observations;
+
+    // Recalculate actual unreflected count (don't trust stale counter in meta)
+    let actualUnreflected = 0;
+    for (const skel of nodeIndex.getAllSkeletons()) {
+      if (skel.type !== "observation") continue;
+      if (skel.status === "dead" || skel.status === "archived") continue;
+      const hasReflection = nodeIndex.graph
+        .getIncoming(skel.id)
+        .some((l) => l.type === "supported_by" && l.status === "active");
+      if (!hasReflection) actualUnreflected++;
+    }
+    if (meta.reflection_triggers.unreflected_observations !== actualUnreflected) {
+      meta.reflection_triggers.unreflected_observations = actualUnreflected;
+      await storage.writeMeta(meta);
+    }
+    const unreflected = actualUnreflected;
     if (unreflected >= REFLECTION_THRESHOLD) {
       pi.sendMessage({
         customType: "kb-reflection-reminder",

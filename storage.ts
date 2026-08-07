@@ -395,6 +395,8 @@ export class KBStorage {
       last_touched: (fm.last_touched as number) || 0,
       tags: (fm.tags as string[]) || [],
       snippet,
+      sources: (fm.sources as string[]) || undefined,
+      child_nodes: (fm.child_nodes as string[]) || undefined,
     };
   }
 

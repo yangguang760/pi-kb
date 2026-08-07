@@ -53,6 +53,7 @@ export class NodeIndex {
    */
   async rebuild(): Promise<{ loaded: number; errors: string[] }> {
     this.skeletons.clear();
+    this.linkGraph = new LinkGraphClass();
     const ids = await this.storage.listNodeIds();
     const errors: string[] = [];
     let loaded = 0;
@@ -64,6 +65,33 @@ export class NodeIndex {
         loaded++;
       } else {
         errors.push(`Failed to parse skeleton for ${id}`);
+      }
+    }
+
+    // Reconstruct link graph from skeleton metadata
+    const now = Date.now();
+    for (const skeleton of this.skeletons.values()) {
+      // Reflection/insight sources → supported_by links
+      if (skeleton.sources) {
+        for (const srcId of skeleton.sources) {
+          if (this.skeletons.has(srcId)) {
+            this.linkGraph.addLink({
+              from: skeleton.id, to: srcId, type: "supported_by",
+              status: "active", created_at: now,
+            });
+          }
+        }
+      }
+      // MOC child_nodes → parent_of links
+      if (skeleton.child_nodes) {
+        for (const childId of skeleton.child_nodes) {
+          if (this.skeletons.has(childId)) {
+            this.linkGraph.addLink({
+              from: skeleton.id, to: childId, type: "parent_of",
+              status: "active", created_at: now,
+            });
+          }
+        }
       }
     }
 
@@ -163,6 +191,29 @@ export class NodeIndex {
 
   addSkeleton(skeleton: NodeSkeleton): void {
     this.skeletons.set(skeleton.id, skeleton);
+
+    // Auto-create links from sources/child_nodes metadata
+    const now = Date.now();
+    if (skeleton.sources) {
+      for (const srcId of skeleton.sources) {
+        if (this.skeletons.has(srcId)) {
+          this.linkGraph.addLink({
+            from: skeleton.id, to: srcId, type: "supported_by",
+            status: "active", created_at: now,
+          });
+        }
+      }
+    }
+    if (skeleton.child_nodes) {
+      for (const childId of skeleton.child_nodes) {
+        if (this.skeletons.has(childId)) {
+          this.linkGraph.addLink({
+            from: skeleton.id, to: childId, type: "parent_of",
+            status: "active", created_at: now,
+          });
+        }
+      }
+    }
   }
 
   updateSkeleton(
